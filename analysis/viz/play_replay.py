@@ -18,10 +18,11 @@ from matplotlib.patches import Circle, Rectangle
 from common import (COVER_COL, DATA, DEF_COL, FIELD_COL, FONT, HORIZON, OFF_COL, OPEN_COL, OUT, km_eval,
                     load_openness, openness_color, pocket_curves)
 
-# Hero play: PHI @ CAR, Wk 5. Clean pocket, 3.0 s: Hurts throws to a covered Ertz while Quez Watkins is ~10 yds open.
-# (First choice CIN/DET 2021101704/1935 was dropped: Chase was on the sideline, y = 47.4, at the throw.)
-GAME, PLAY = 2021101001, 2250
-QB = "Hurts"
+# Hero play: a 'missed'-bucket play from outputs/buckets.csv. MIN, Wk 6, no pressure, 4.1 s: Cousins throws to a covered
+# Thielen (0.9 yd at the throw) while Justin Jefferson is 7.6 yds open, 19.7 yds downfield, mid-field (y = 30.3).
+# (Previous hero: PHI @ CAR 2021101001/2250, Hurts -> Ertz with Quez Watkins open.)
+GAME, PLAY = 2021101702, 5087
+QB = "Cousins"
 # label placement at the throw (dx, dy in yds, vertical anchor) so labels clear each other and nearby players
 LABEL_POS = {"tgt": (-5.0, -3.4, "top"), "mo": (4.0, 3.6, "bottom")}
 PRESSURE_CSV = f"{ANALYSIS}/pressure/play_pressure.csv"
