@@ -21,7 +21,7 @@ TRACKING = DATA / "tracking"
 
 FPS = 10  # tracking is sampled at 10 Hz; t = (frameId - snap_frame) / FPS
 
-# ---- Thresholds (assumptions, see README) ----
+# ---- Thresholds (assumptions, see METHOD.md) ----
 PRESSURE_RADIUS_YD = 2.0   # a Pass Rush player this close to the QB = pressure
 SIGHT_HALF_ANGLE_DEG = 90  # receiver is "in sight" if within this many degrees of QB 'o'
 MIN_LEAD_S = 0.4           # receiver must open at least this long before t_end
