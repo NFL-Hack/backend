@@ -3,7 +3,17 @@
 Inputs: ../openness/receiver_openness.csv, player_summary.csv; ../clock/routes_clock.csv, player_clock.csv,
 cache_clock.pkl (pocket KM curves are rebuilt from it); raw tracking for the replay play.
 """
+import os
+import sys
 import time
+
+# Build the clock cache (pocket times per play) if missing, e.g. on a fresh clone. ~10 s.
+_CLOCK = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "clock")
+if not os.path.exists(os.path.join(_CLOCK, "cache_clock.pkl")):
+    print("== building clock cache (first run)")
+    sys.path.insert(0, _CLOCK)
+    import clock
+    clock.load()
 
 import cost_of_ignoring
 import play_replay
