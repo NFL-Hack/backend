@@ -19,10 +19,12 @@ import cost_of_ignoring
 import play_replay
 import scouting_card
 import the_race
+import why_ignored  # reads ../../outputs/buckets.csv (src/combine.py)
 
 if __name__ == "__main__":
     for name, mod in [("play replay", play_replay), ("the race", the_race),
-                      ("cost of ignoring", cost_of_ignoring), ("scouting card", scouting_card)]:
+                      ("cost of ignoring", cost_of_ignoring), ("why ignored", why_ignored),
+                      ("scouting card", scouting_card)]:
         t = time.time()
         print(f"== {name}")
         mod.main()

@@ -27,8 +27,8 @@
 <body>
 <main>
   <h1>The Open Man They Ignored, and the Clock He Was Racing</h1>
-  <p class="lede">NFL Big Data Bowl tracking, 2021 weeks 1–8. <b>Openness</b> = yards from a route runner to the nearest defender, projected 0.7 s ahead.
-    <b>Pocket clock</b> = Kaplan–Meier probability that no rusher is within 2 yds of the QB yet. QBs passed on a clearly-open downfield receiver 72% of the time, and pressure doesn't explain it: they hit him on 28% of clean plays and 28% of pressured ones.</p>
+  <p class="lede">NFL Big Data Bowl tracking, 2021 weeks 1–8. On 2,229 plays a receiver 5+ yds downfield was clearly the most open; QBs threw to him on 619 and passed on him 72% of the time.
+    Pressure doesn't explain it: QBs hit him on about 28% of plays whether the pocket was clean or not. On 462 ignored plays he was open in time, in the QB's sight, and still open at the throw.</p>
   <div class="grid">
     <section class="card">
       <h2>1 · Play replay: clean pocket, Watkins 10 yds open, ball goes elsewhere</h2>
@@ -37,19 +37,24 @@
       <div class="links"><a href="play_replay.html">Interactive replay (play / pause / slider) →</a><a href="play_replay_throw.png">Throw-frame still</a></div>
     </section>
     <section class="card">
-      <h2>2 · The Race</h2>
+      <h2>2 · The Cost of Ignoring</h2>
+      <p>Hitting the clearly-open downfield man: 79% completions and 14.7 yds/play vs. 65% and 6.7 elsewhere. With a clean pocket and 2.5 s+, QBs still passed on him 66% of the time, at a cost of 9.3 yds a play (16.6 vs. 7.3).</p>
+      <img src="cost_of_ignoring.png" alt="Bar charts, all plays vs clean pocket: 14.7 vs 6.7 and 16.6 vs 7.3 yards per play; 79% vs 65% and 85% vs 66% completion">
+    </section>
+    <section class="card">
+      <h2>3 · Why he was ignored</h2>
+      <p>Each ignored open man, sorted by the first check he fails: too late (opened after pressure or under 0.4 s before the throw), not a real window (outside the QB's 90° sight cone, or under 3 yds open at the throw), or an open window the QB passed up.</p>
+      <img src="why_ignored.png" alt="Funnel: 2,229 clear-open plays, 1,610 ignored; too late 32.4%, not a real window 38.9%, open window 28.7% (462 plays)">
+    </section>
+    <section class="card">
+      <h2>4 · The Race</h2>
       <p>Pocket survival vs. how fast each position (and the top receivers) get open after being covered.</p>
       <a href="the_race.html"><img src="the_race.png" alt="Pocket survival curve over median time-to-open bars by receiver"></a>
       <div class="links"><a href="the_race.html">Interactive: every receiver with 150+ routes →</a></div>
     </section>
     <section class="card">
-      <h2>3 · The Cost of Ignoring</h2>
-      <p>Hitting the clearly-open downfield man: 79% completions and 14.7 yds/play vs. 65% and 6.7 elsewhere. With a clean pocket and 2.5 s+, QBs still passed on him 66% of the time, at a cost of 9.3 yds a play (16.6 vs. 7.3).</p>
-      <img src="cost_of_ignoring.png" alt="Bar charts, all plays vs clean pocket: 14.7 vs 6.7 and 16.6 vs 7.3 yards per play; 79% vs 65% and 85% vs 66% completion">
-    </section>
-    <section class="card">
-      <h2>4 · Player scouting card</h2>
-      <p>Pick any WR/TE/RB with 50+ routes and compare him with his position average, including how often he's ignored with a clean pocket.</p>
+      <h2>5 · Player scouting card</h2>
+      <p>Pick any WR/TE with 50+ routes and compare him with his position average, including how often he's ignored with a clean pocket.</p>
       <a href="scouting_card.html"><img src="scouting_card_preview.png" alt="Scouting card for Cooper Kupp"></a>
       <div class="links"><a href="scouting_card.html">Open the interactive card →</a></div>
     </section>
