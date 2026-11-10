@@ -7,3 +7,4 @@ outputs/*
 !outputs/routes.csv
 !outputs/buckets.csv
 !outputs/receiver_rating.csv
+*.pkl

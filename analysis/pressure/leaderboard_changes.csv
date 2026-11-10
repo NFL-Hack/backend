@@ -1,0 +1,7 @@
+pos,version,spearman,dropped,new
+WR,cleanB,0.8337025542172619,"['Dyami Brown', 'Laviska Shenault', 'Marcus Johnson']","['A.J. Brown', 'Deonte Harty', 'Quez Watkins']"
+WR,cleanAB,0.7633640925173245,"['Dyami Brown', 'Laviska Shenault', 'Marcus Johnson']","['JuJu Smith-Schuster', 'Mecole Hardman', 'Quez Watkins']"
+TE,cleanB,0.736402504043481,"['Jonnu Smith', 'MyCole Pruitt']","['Logan Thomas', 'Robert Tonyan']"
+TE,cleanAB,0.6762360317312444,"['Gerald Everett', 'Jonnu Smith', 'MyCole Pruitt']","['Darren Waller', 'Logan Thomas', 'Rob Gronkowski']"
+RB,cleanB,0.859802311705577,['James Robinson'],['Darrel Williams']
+RB,cleanAB,0.8155849730849098,['James Robinson'],['Darrel Williams']

@@ -1,0 +1,13 @@
+metric,value
+n_plays,6816.0
+press_A_rate,0.2706866197183099
+press_B_rate,0.28946596244131456
+agree,0.823943661971831
+kappa,0.5636158295540795
+jaccard,0.5217218015145476
+P_B_given_A,0.7094850948509485
+P_A_given_B,0.6634566649771921
+tthrow_med_pressA,3.1
+tthrow_med_cleanA,2.5
+tthrow_med_pressB,3.0
+tthrow_med_cleanB,2.6

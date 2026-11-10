@@ -1,0 +1,150 @@
+plays: 8045; pressure/sack observed 34.5%; blitz rate 24.5%; median time to throw 2.70s
+  All plays            KM median 3.5s  S(2.0)=0.97 S(2.5)=0.83  S(3.0)=0.63
+  Blitz (5+ rushers)   KM median 3.1s  S(2.0)=0.94 S(2.5)=0.75  S(3.0)=0.52
+  No blitz (<=4)       KM median 3.7s  S(2.0)=0.98 S(2.5)=0.86  S(3.0)=0.67
+  Man coverage         KM median 3.4s  S(2.0)=0.97 S(2.5)=0.81  S(3.0)=0.60
+  Zone coverage        KM median 3.6s  S(2.0)=0.97 S(2.5)=0.84  S(3.0)=0.64
+
+routes: 37155; free releases 14.1%
+         n   free
+pos              
+RB    6962  0.157
+TE    8542  0.038
+WR   21651  0.177
+         n  open_pct  med_tto   beat
+pos                                 
+RB    5868     0.797      1.6  0.743
+TE    8217     0.723      1.0  0.691
+WR   17824     0.537      1.6  0.488
+                              n  open_pct  med_tto   beat
+pos pff_passCoverageType                                 
+RB  Man                    1591     0.653      1.6  0.600
+    Other                   341     0.724      1.4  0.658
+    Zone                   3936     0.861      1.6  0.808
+TE  Man                    2343     0.490      1.0  0.457
+    Other                   521     0.578      1.1  0.536
+    Zone                   5353     0.840      1.0  0.809
+WR  Man                    5781     0.313      1.5  0.271
+    Other                  1087     0.467      1.6  0.411
+    Zone                  10956     0.662      1.6  0.610
+                   n  open_pct  med_tto   beat
+pos align                                     
+RB  Backfield   4838     0.845      1.6  0.789
+    Inline TE    151     0.834      1.3  0.797
+    Slot         398     0.751      1.2  0.715
+    Wide         481     0.335      1.9  0.284
+TE  Backfield    168     0.804      1.5  0.758
+    Inline TE   3647     0.785      1.1  0.749
+    Other          1     1.000      2.2  0.953
+    Slot        3287     0.713      0.7  0.687
+    Wide        1114     0.540      1.2  0.505
+WR  Backfield     42     0.833      1.2  0.810
+    Inline TE     69     0.826      1.4  0.781
+    Slot        7221     0.623      1.4  0.582
+    Wide       10492     0.474      1.7  0.420
+  WR KM median time-to-open 2.80s
+  TE KM median time-to-open 1.50s
+  RB KM median time-to-open 1.80s
+
+=== WR (n=134) top Beat-the-Clock
+      displayName team  routes  free_release_pct  open_pct  median_tto  beat_clock  beat_clock_man  beat_clock_zone  comp_pct_targeted  yds_per_target
+     James Proche  BAL      89             0.146     0.763        1.25       0.703           0.645            0.721              0.667          11.111
+   Christian Kirk  ARI     169             0.160     0.725        1.20       0.678           0.348            0.784              0.800          11.629
+    Rondale Moore  ARI     105             0.276     0.724        1.60       0.667           0.583            0.682              0.692          14.385
+    Ty Montgomery   NO      73             0.110     0.723        1.40       0.660           0.536            0.766              0.714           7.143
+  Braxton Berrios  NYJ     105             0.152     0.697        1.20       0.655           0.511            0.771              0.667           6.810
+      Cooper Kupp   LA     229             0.153     0.696        1.40       0.639           0.398            0.778              0.675           9.512
+Amon-Ra St. Brown  DET     224             0.138     0.674        1.20       0.635           0.378            0.745              0.686           6.657
+    Tyler Lockett  SEA     204             0.201     0.693        1.50       0.629           0.366            0.734              0.660          10.362
+--- bottom
+   displayName team  routes  free_release_pct  open_pct  median_tto  beat_clock  beat_clock_man  beat_clock_zone  comp_pct_targeted  yds_per_target
+Collin Johnson  NYG      87             0.287     0.323         1.9       0.301           0.099            0.424              0.526           4.684
+Kenny Golladay  NYG     129             0.186     0.333         1.9       0.297           0.229            0.334              0.640          10.640
+DeVante Parker  MIA     162             0.198     0.315         1.5       0.296           0.106            0.399              0.583           8.139
+Nelson Agholor   NE     220             0.155     0.285         1.5       0.263           0.075            0.396              0.457           6.800
+--- zone-only (biggest zone minus man)
+    displayName team  routes  free_release_pct  open_pct  median_tto  beat_clock  beat_clock_man  beat_clock_zone  comp_pct_targeted  yds_per_target  n_man
+    K.J. Hamler  DEN      52             0.096     0.553         1.9       0.464           0.066            0.711              0.444           7.667     15
+   Mack Hollins  MIA      88             0.159     0.554         1.6       0.517           0.080            0.706              0.500           6.625     23
+ Chester Rogers  TEN     147             0.150     0.568         1.6       0.529           0.146            0.762              0.632           7.368     42
+Parris Campbell  IND      84             0.167     0.429         2.0       0.379           0.083            0.624              0.562           9.750     27
+ DeAndre Carter  WAS      97             0.175     0.462         1.6       0.406           0.124            0.664              0.538           8.615     32
+
+=== TE (n=59) top Beat-the-Clock
+   displayName team  routes  free_release_pct  open_pct  median_tto  beat_clock  beat_clock_man  beat_clock_zone  comp_pct_targeted  yds_per_target
+Dallas Goedert  PHI     134             0.045     0.852         0.9       0.801           0.497            0.918              0.760          12.680
+   Josh Oliver  BAL      56             0.071     0.808         0.9       0.797           0.615            0.827              0.583           4.917
+    Eric Ebron  PIT     106             0.038     0.814         0.8       0.795           0.673            0.831              0.583           3.917
+   Tyler Kroft  NYJ      98             0.031     0.832         0.9       0.794           0.592            0.940              0.636           5.455
+     Noah Fant  DEN     227             0.026     0.801         1.1       0.776           0.518            0.912              0.700           6.040
+  Mark Andrews  BAL     209             0.038     0.811         0.9       0.773           0.573            0.843              0.708          10.479
+  Ryan Griffin  NYJ     101             0.000     0.812         1.2       0.771           0.651            0.849              0.588           4.176
+T.J. Hockenson  DET     262             0.027     0.788         0.8       0.767           0.535            0.850              0.733           7.267
+--- bottom
+ displayName team  routes  free_release_pct  open_pct  median_tto  beat_clock  beat_clock_man  beat_clock_zone  comp_pct_targeted  yds_per_target
+Jordan Akins  HOU     127             0.063     0.639         0.9       0.614           0.298            0.772              0.727           7.045
+Tyler Higbee   LA     190             0.058     0.631         1.1       0.604           0.487            0.665              0.769           7.885
+  Kyle Pitts  ATL     223             0.076     0.612         0.8       0.592           0.305            0.715              0.660           9.980
+ C.J. Uzomah  CIN     190             0.105     0.582         0.9       0.556           0.383            0.655              0.900          12.500
+--- zone-only (biggest zone minus man)
+       displayName team  routes  free_release_pct  open_pct  median_tto  beat_clock  beat_clock_man  beat_clock_zone  comp_pct_targeted  yds_per_target  n_man
+Albert Okwuegbunam  DEN      56             0.018     0.782         1.2       0.755           0.327            0.912              0.917           7.250     15
+      Mike Gesicki  MIA     221             0.081     0.695         0.8       0.663           0.295            0.840              0.767           9.512     67
+      Logan Thomas  WAS      87             0.034     0.702         0.6       0.683           0.303            0.844              0.833           8.583     24
+        Dan Arnold  JAX     144             0.042     0.667         0.7       0.645           0.311            0.845              0.645           5.806     48
+     MyCole Pruitt  TEN      62             0.000     0.726         1.0       0.684           0.326            0.835              0.900          13.600     16
+
+=== RB (n=57) top Beat-the-Clock
+     displayName team  routes  free_release_pct  open_pct  median_tto  beat_clock  beat_clock_man  beat_clock_zone  comp_pct_targeted  yds_per_target
+   D'Andre Swift  DET     198             0.162     0.898         1.5       0.853           0.747            0.879              0.795           5.841
+Kenneth Gainwell  PHI      91             0.044     0.885         1.4       0.841           0.689            0.911              0.615           4.500
+   Chuba Hubbard  CAR      93             0.129     0.889         1.5       0.838           0.724            0.888              0.636           3.864
+ Ty'Son Williams  BAL      62             0.177     0.882         1.6       0.832           0.199            0.899              0.800           7.700
+  Khalil Herbert  CHI      75             0.120     0.909         1.6       0.827           0.756            0.846              0.833           2.000
+Javonte Williams  DEN      99             0.253     0.878         1.5       0.825           0.653            0.866              0.889           7.167
+Jeremy McNichols  TEN      87             0.069     0.840         1.6       0.814           0.727            0.859              0.750           6.875
+     Carlos Hyde  JAX      63             0.079     0.845         1.6       0.808           0.928            0.808              0.727           4.909
+--- bottom
+       displayName team  routes  free_release_pct  open_pct  median_tto  beat_clock  beat_clock_man  beat_clock_zone  comp_pct_targeted  yds_per_target
+Alexander Mattison  MIN      52             0.154     0.682        1.65       0.633           0.536            0.644              0.917           3.917
+   Jamaal Williams  DET      66             0.136     0.684        2.00       0.621           0.429            0.695              0.882           5.294
+   Elijah Mitchell   SF      54             0.185     0.727        1.90       0.621           0.098            0.684              1.000           5.000
+        Nick Chubb  CLE      64             0.203     0.588        1.50       0.552           0.436            0.591              1.000           7.000
+--- zone-only (biggest zone minus man)
+     displayName team  routes  free_release_pct  open_pct  median_tto  beat_clock  beat_clock_man  beat_clock_zone  comp_pct_targeted  yds_per_target  n_man
+   Miles Sanders  PHI      99             0.061     0.796        1.75       0.732           0.428            0.866              0.692           4.615     29
+       Zack Moss  BUF      83             0.241     0.825        1.75       0.761           0.489            0.911              0.692           7.385     18
+ Jonathan Taylor  IND      96             0.115     0.847        1.80       0.785           0.462            0.874              0.750           8.062     18
+   Samaje Perine  CIN      66             0.136     0.737        1.50       0.717           0.501            0.882              0.818           8.182     23
+Devin Singletary  BUF     108             0.176     0.742        1.75       0.679           0.441            0.808              0.714           2.429     30
+
+player-level corr
+                    beat_clock  comp_pct_targeted  yds_per_target
+beat_clock              1.000              0.451          -0.256
+comp_pct_targeted       0.451              1.000           0.203
+yds_per_target         -0.256              0.203           1.000
+
+VALIDATION by target beat_clock
+                  n   comp     yds
+cat                              
+Never open    1722  0.431   6.583
+<0.6           165  0.642  13.285
+0.6-0.8        202  0.748  12.104
+0.8-0.9        202  0.668  10.431
+0.9+          3433  0.717   8.244
+Free release  1088  0.771   7.300
+
+VALIDATION by target time_to_open (opened only)
+                  n   comp     yds
+time_to_open                     
+[0.0, 1.5)    2203  0.703   7.544
+[1.5, 2.0)     862  0.746   9.348
+[2.0, 2.5)     476  0.725   9.964
+[2.5, 3.0)     245  0.718  11.637
+[3.0, 3.5)     135  0.704  13.630
+[3.5, 99.0)     81  0.580  11.519
+
+logit complete ~ beat_clock (covered targets, n=5724): b=1.226 se=0.062 z=19.7
+logit complete ~ opened: b=1.189 se=0.060
+
+charts written

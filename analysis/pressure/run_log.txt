@@ -1,0 +1,167 @@
+BASELINE
+  clear most-open (all depth): 3021 plays, targeted 30.9%
+  clear most-open downfield 5+: 2236 plays, ignored 72.2%
+             n   comp     yds
+targeted                     
+False     1615  0.650   6.690
+True       621  0.792  14.694
+
+SANITY (throw plays with a matched target, n=6816; all 7168 throw plays in openness file)
+  pressured A (tracking): 27.1%   pressured B (PFF): 28.9%   blitz: 24.3%
+  crosstab rows=A cols=B
+ press_B  False  True   All
+press_A                   
+False     4307   664  4971
+True       536  1309  1845
+All       4843  1973  6816
+  agreement 82.4%; Cohen kappa 0.56; Jaccard (both | either) 52.2%; P(B|A) 70.9%; P(A|B) 66.3%
+  time to throw by press_A:
+         median  mean  size
+press_A                    
+False       2.5  2.67  4971
+True        3.1  3.38  1845
+  time to throw by press_B:
+         median  mean  size
+press_B                    
+False       2.6  2.67  4843
+True        3.0  3.33  1973
+  pressured-A: median time of pressure 2.70s; median gap pressure->throw 0.20s
+  pressure rate by blitz: A {False: 0.26, True: 0.305} B {False: 0.255, True: 0.396}
+  clean&on-time share: 33.8%; clean-both share 63.2%
+
+BUCKETS
+                bucket  n_plays  share_of_plays  median_t_throw  n_clear  pct_clear_targeted  n_clear_dn  pct_clear_dn_targeted
+                   all     6835           1.000             2.7     3021               0.309        2236                  0.278
+               clean_A     4971           0.727             2.5     2189               0.320        1594                  0.279
+           pressured_A     1845           0.270             3.1      821               0.283         635                  0.276
+               clean_B     4852           0.710             2.6     2141               0.310        1568                  0.277
+           pressured_B     1983           0.290             3.0      880               0.307         668                  0.278
+            clean_both     4307           0.630             2.5     1902               0.317        1374                  0.278
+      pressured_either     2519           0.369             3.0     1116               0.296         859                  0.277
+          clean_ontime     2306           0.337             3.0     1071               0.314         815                  0.339
+clean_both_quick_lt2.5     2001           0.293             2.1      831               0.321         559                  0.190
+                 blitz     1657           0.242             2.5      651               0.369         461                  0.341
+              no_blitz     5159           0.755             2.8     2359               0.293        1768                  0.261
+                bucket  dn_hit_n  dn_hit_comp  dn_hit_yds  dn_else_n  dn_else_comp  dn_else_yds  dn_gap_comp  dn_gap_yds
+                   all       621        0.792      14.694       1615         0.650        6.690        0.143       8.004
+               clean_A       444        0.845      15.509       1150         0.695        6.866        0.150       8.643
+           pressured_A       175        0.663      12.726        460         0.535        6.259        0.128       6.467
+               clean_B       435        0.846      15.614       1133         0.695        7.109        0.151       8.505
+           pressured_B       186        0.667      12.543        482         0.544        5.705        0.123       6.838
+            clean_both       382        0.861      15.649        992         0.698        6.872        0.164       8.777
+      pressured_either       238        0.685      13.223        621         0.572        6.404        0.113       6.819
+          clean_ontime       276        0.848      16.645        539         0.660        7.310        0.187       9.335
+clean_both_quick_lt2.5       106        0.896      13.057        453         0.742        6.351        0.155       6.706
+                 blitz       157        0.809      16.586        304         0.589        6.444        0.220      10.142
+              no_blitz       462        0.788      14.089       1306         0.663        6.750        0.125       7.338
+                bucket  med_target_open_all  med_most_open_all  med_target_open_clear_ignored  med_clear_open_ignored  med_target_open_dn_ignored  med_dn_open_ignored  med_dn_open_depth_ignored  med_target_depth_dn_ignored
+                   all                 3.27               6.17                           2.54                    8.25                        3.19                 5.61                       9.80                         4.16
+               clean_A                 3.33               6.12                           2.51                    8.14                        3.29                 5.39                       8.94                         3.95
+           pressured_A                 3.06               6.41                           2.59                    8.72                        3.02                 6.23                      12.07                         4.76
+               clean_B                 3.33               6.19                           2.57                    8.21                        3.26                 5.45                       9.05                         4.08
+           pressured_B                 3.12               6.14                           2.46                    8.35                        3.02                 6.04                      11.81                         4.48
+            clean_both                 3.34               6.14                           2.55                    8.18                        3.30                 5.38                       8.80                         3.97
+      pressured_either                 3.10               6.23                           2.53                    8.38                        3.02                 6.01                      11.55                         4.59
+          clean_ontime                 3.54               6.61                           2.72                    8.55                        3.44                 6.06                      11.77                         4.44
+clean_both_quick_lt2.5                 3.20               5.70                           2.40                    7.71                        3.22                 4.54                       6.61                         3.80
+                 blitz                 2.78               5.06                           2.11                    7.40                        3.12                 5.20                       8.59                         3.76
+              no_blitz                 3.41               6.52                           2.66                    8.44                        3.20                 5.67                      10.08                         4.22
+
+PLAYERS (metric: WR/TE = ignored while clearly most open 5+ yds downfield; RB = all depth; denominator = routes on plays with a matched target)
+
+=== WR (n=129) top 10 by clean-pocket (B) rate
+     displayName team  routes  n_all  metric_all  rank_all  n_cleanB  metric_cleanB  rank_cleanB  n_cleanAB  metric_cleanAB  rank_cleanAB
+    Kenny Stills   NO      53     44       0.136       2.0      26.0          0.192          1.0       25.0           0.200           1.0
+    Quez Watkins  PHI     134    121       0.091      24.0      73.0          0.137          2.0       65.0           0.154           2.0
+Justin Jefferson  MIN     212    200       0.125       6.0     142.0          0.134          3.0      119.0           0.143           3.0
+    Deonte Harty   NO      63     43       0.093      21.0      23.0          0.130          4.0       20.0           0.050          93.0
+      DK Metcalf  SEA     162    151       0.113       9.0     101.0          0.129          5.0       92.0           0.141           4.0
+       John Ross  NYG      80     76       0.132       3.0      56.0          0.125          6.0       51.0           0.118           6.0
+    Elijah Moore  NYJ     117    115       0.130       4.0      74.0          0.122          7.0       65.0           0.138           5.0
+   Albert Wilson  MIA      71     71       0.113       8.0      42.0          0.119          8.0       35.0           0.114           8.0
+      A.J. Brown  TEN     154    144       0.097      13.0     102.0          0.118          9.0       87.0           0.103          14.0
+    Randall Cobb   GB      98     94       0.138       1.0      69.0          0.116         10.0       63.0           0.111           9.0
+  cleanB: Spearman vs original (all 129 WRs) = 0.83; drop out of top 10: ['Dyami Brown', 'Laviska Shenault', 'Marcus Johnson']; new: ['A.J. Brown', 'Deonte Harty', 'Quez Watkins']
+  cleanAB: Spearman vs original (all 129 WRs) = 0.76; drop out of top 10: ['Dyami Brown', 'Laviska Shenault', 'Marcus Johnson']; new: ['JuJu Smith-Schuster', 'Mecole Hardman', 'Quez Watkins']
+
+=== TE (n=55) top 5 by clean-pocket (B) rate
+   displayName team  routes  n_all  metric_all  rank_all  n_cleanB  metric_cleanB  rank_cleanB  n_cleanAB  metric_cleanAB  rank_cleanAB
+   Will Dissly  SEA      82     78       0.103       1.0      50.0          0.120          1.0       45.0           0.111           1.0
+   David Njoku  CLE      94     87       0.092       3.0      69.0          0.101          2.0       64.0           0.094           2.0
+Gerald Everett  SEA      90     83       0.084       4.0      58.0          0.086          3.0       54.0           0.074           6.0
+  Logan Thomas  WAS      74     71       0.070       6.0      53.0          0.075          4.0       50.0           0.080           3.0
+ Robert Tonyan   GB     129    122       0.066       9.0      95.0          0.074          5.0       87.0           0.069           8.0
+  cleanB: Spearman vs original (all 55 TEs) = 0.74; drop out of top 5: ['Jonnu Smith', 'MyCole Pruitt']; new: ['Logan Thomas', 'Robert Tonyan']
+  cleanAB: Spearman vs original (all 55 TEs) = 0.68; drop out of top 5: ['Gerald Everett', 'Jonnu Smith', 'MyCole Pruitt']; new: ['Darren Waller', 'Logan Thomas', 'Rob Gronkowski']
+
+=== RB (n=52) top 5 by clean-pocket (B) rate
+     displayName team  routes  n_all  metric_all  rank_all  n_cleanB  metric_cleanB  rank_cleanB  n_cleanAB  metric_cleanAB  rank_cleanAB
+ Ty'Son Williams  BAL      52     50       0.340       1.0      36.0          0.389          1.0       27.0           0.370           1.0
+   David Johnson  HOU      81     79       0.266       5.0      57.0          0.316          2.0       55.0           0.309           3.0
+Javonte Williams  DEN      87     82       0.305       3.0      60.0          0.300          3.0       50.0           0.320           2.0
+ Elijah Mitchell   SF      50     49       0.306       2.0      44.0          0.295          4.0       38.0           0.289           4.0
+ Darrel Williams   KC     116    110       0.245       6.0      80.0          0.288          5.0       68.0           0.279           5.0
+  cleanB: Spearman vs original (all 52 RBs) = 0.86; drop out of top 5: ['James Robinson']; new: ['Darrel Williams']
+  cleanAB: Spearman vs original (all 52 RBs) = 0.82; drop out of top 5: ['James Robinson']; new: ['Darrel Williams']
+
+QB / TEAM clean-pocket (B) hit rate on clear-open plays (>= 40 such plays)
+         level             name  clear_plays_all  hit_rate_all  n_clean_B  hit_clean_B  n_clean_both  hit_clean_both  n_dn_clean_B  hit_dn_clean_B
+possessionTeam              HOU               79         0.215         56        0.179            55           0.182            46           0.196
+possessionTeam              MIN               85         0.259         68        0.235            57           0.193            50            0.24
+possessionTeam               SF               77         0.299         54        0.241            44           0.205            43           0.419
+possessionTeam              ARI               91         0.231         65        0.246            62           0.258            51           0.333
+possessionTeam              CIN               89         0.303         64         0.25            60            0.25            49           0.184
+possessionTeam              DAL               87          0.23         72         0.25            67           0.254            56           0.232
+possessionTeam              CHI               84         0.238         62        0.258            59           0.254            44           0.273
+possessionTeam              DEN              117         0.256         73         0.26            57           0.281            69           0.246
+possessionTeam              JAX              104          0.24         67        0.269            54           0.296            42           0.262
+possessionTeam              SEA               77          0.26         51        0.275            45           0.311            53           0.283
+possessionTeam              TEN               95         0.305         72        0.292            64           0.312            54           0.296
+possessionTeam              PIT               76         0.316         61        0.295            55           0.327            46           0.174
+possessionTeam               KC              139         0.309        105        0.295            92           0.326            58           0.328
+possessionTeam              CLE               82         0.305         71        0.296            64           0.297            47           0.298
+possessionTeam               LA               97         0.268         73        0.301            67           0.313            49           0.367
+possessionTeam               TB              116         0.284         89        0.303            81           0.309            63           0.333
+possessionTeam              ATL              105         0.343         79        0.304            71           0.338            54           0.241
+possessionTeam              MIA              106          0.34         68        0.309            58            0.31            54           0.185
+possessionTeam              PHI               70         0.329         45        0.311            41           0.293            38           0.289
+possessionTeam              CAR              103         0.301         72        0.319            63           0.365            43           0.395
+possessionTeam              IND               86         0.267         51        0.333            48           0.312            37           0.324
+possessionTeam              NYG               88         0.341         67        0.343            60           0.333            46           0.283
+possessionTeam              BAL              103         0.359         74        0.351            62           0.339            43           0.442
+possessionTeam               GB               76         0.316         51        0.353            49           0.347            47           0.213
+possessionTeam              DET              115         0.322         76        0.355            68           0.353            69           0.217
+possessionTeam              WAS              125         0.368         85        0.376            79           0.392            56           0.268
+possessionTeam              LAC               94         0.372         71         0.38            62           0.355            43           0.279
+possessionTeam              BUF               85         0.365         55        0.382            49           0.408            34           0.206
+possessionTeam               LV               98         0.378         73        0.384            60           0.383            47           0.255
+possessionTeam              NYJ              114         0.395         64        0.391            52           0.404            55           0.291
+possessionTeam               NE              108         0.398         75        0.453            68           0.471            56           0.321
+            qb          D.Mills               64         0.203         46        0.152            45           0.156            39           0.205
+            qb       D.Prescott               72         0.208         58        0.224            55           0.218            46           0.261
+            qb         J.Fields               64         0.234         47        0.234            44           0.227            31           0.323
+            qb        K.Cousins               84         0.262         68        0.235            57           0.193            50            0.24
+            qb         J.Burrow               85         0.306         61        0.246            57           0.246            49           0.184
+            qb         K.Murray               91         0.231         65        0.246            62           0.258            50            0.32
+            qb    T.Bridgewater              108         0.259         68        0.265            53           0.283            65           0.262
+            qb       T.Lawrence              104          0.24         67        0.269            54           0.296            42           0.262
+            qb       B.Mayfield               65         0.277         57        0.281            52           0.288            41           0.268
+            qb      R.Tannehill               95         0.305         72        0.292            64           0.312            53           0.283
+            qb        P.Mahomes              132         0.303         99        0.293            86           0.326            53           0.358
+            qb B.Roethlisberger               76         0.316         61        0.295            55           0.327            46           0.174
+            qb          T.Brady              110         0.282         83        0.301            76           0.303            60           0.317
+            qb       M.Stafford               96         0.271         73        0.301            67           0.313            49           0.367
+            qb           M.Ryan              105         0.343         79        0.304            71           0.338            54           0.241
+            qb          J.Hurts               70         0.329         45        0.311            41           0.293            38           0.289
+            qb        S.Darnold               92         0.326         65        0.338            56           0.393            41            0.39
+            qb          C.Wentz               85         0.271         50         0.34            47           0.319            34           0.324
+            qb          D.Jones               82         0.329         63        0.349            56           0.339            43           0.256
+            qb       Aa.Rodgers               76         0.316         51        0.353            49           0.347            46           0.217
+            qb           J.Goff              115         0.322         76        0.355            68           0.353            68           0.206
+            qb        J.Herbert               91         0.352         69        0.362            62           0.355            41           0.244
+            qb        L.Jackson               97         0.371         71        0.366            60            0.35            43           0.442
+            qb       T.Heinicke              123         0.366         84        0.381            78           0.397            55           0.273
+            qb           D.Carr               98         0.378         73        0.384            60           0.383            47           0.255
+            qb         Z.Wilson               82          0.39         43        0.395            35             0.4            41           0.366
+            qb          J.Allen               68         0.397         47        0.404            41           0.439            30             0.2
+            qb          M.Jones              105         0.381         74        0.446            67           0.463            55           0.309

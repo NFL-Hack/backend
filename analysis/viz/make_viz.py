@@ -1,0 +1,20 @@
+"""Regenerate every visual in viz/ end to end:  python make_viz.py
+
+Inputs: ../openness/receiver_openness.csv, player_summary.csv; ../clock/routes_clock.csv, player_clock.csv,
+cache_clock.pkl (pocket KM curves are rebuilt from it); raw tracking for the replay play.
+"""
+import time
+
+import cost_of_ignoring
+import play_replay
+import scouting_card
+import the_race
+
+if __name__ == "__main__":
+    for name, mod in [("play replay", play_replay), ("the race", the_race),
+                      ("cost of ignoring", cost_of_ignoring), ("scouting card", scouting_card)]:
+        t = time.time()
+        print(f"== {name}")
+        mod.main()
+        print(f"   done in {time.time() - t:.1f}s")
+    print("open index.html")

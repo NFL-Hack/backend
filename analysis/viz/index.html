@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Open Man Visuals</title>
+<style>
+  :root { --bg:#ffffff; --fg:#1d1d1f; --muted:#666; --card:#f6f7f8; --line:#e2e4e7; --accent:#1f6fb4; --open:#2ca02c; --cover:#d62728; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#141518; --fg:#ececec; --muted:#a0a0a0; --card:#1d1f23; --line:#2c2f34; --accent:#6aa9e6; } }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.5 -apple-system, Helvetica, Arial, sans-serif; }
+  main { max-width:1100px; margin:0 auto; padding:32px 16px 64px; }
+  h1 { font-size:30px; margin:0 0 6px; line-height:1.2; }
+  .lede { color:var(--muted); margin:0 0 28px; max-width:780px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, 480px), 1fr)); gap:20px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; display:flex; flex-direction:column; }
+  .card h2 { font-size:18px; margin:0 0 4px; }
+  .card p { color:var(--muted); margin:0 0 12px; font-size:14px; }
+  .card img { width:100%; height:auto; border-radius:6px; background:#fff; border:1px solid var(--line); }
+  .links { margin-top:10px; display:flex; gap:14px; flex-wrap:wrap; font-size:14px; }
+  a { color:var(--accent); font-weight:600; text-decoration:none; }
+  a:hover { text-decoration:underline; }
+  .key { font-size:13px; color:var(--muted); margin-top:28px; }
+  .sw { display:inline-block; width:10px; height:10px; border-radius:2px; margin:0 4px 0 10px; vertical-align:middle; }
+</style>
+</head>
+<body>
+<main>
+  <h1>The Open Man They Ignored, and the Clock He Was Racing</h1>
+  <p class="lede">NFL Big Data Bowl tracking, 2021 weeks 1–8. <b>Openness</b> = yards from a route runner to the nearest defender, projected 0.7 s ahead.
+    <b>Pocket clock</b> = Kaplan–Meier probability that no rusher is within 2 yds of the QB yet. QBs passed on a clearly-open downfield receiver 72% of the time, and pressure doesn't explain it: they hit him on 28% of clean plays and 28% of pressured ones.</p>
+  <div class="grid">
+    <section class="card">
+      <h2>1 · Play replay: clean pocket, Watkins 10 yds open, ball goes elsewhere</h2>
+      <p>Snap to throw with openness rings and the pocket clock. PHI at CAR, Week 5: no pressure, 3.0 s to throw, Hurts targets a covered Zach Ertz.</p>
+      <a href="play_replay.html"><img src="play_replay.gif" alt="Animated replay: Quez Watkins wide open while Jalen Hurts throws to a covered Zach Ertz"></a>
+      <div class="links"><a href="play_replay.html">Interactive replay (play / pause / slider) →</a><a href="play_replay_throw.png">Throw-frame still</a></div>
+    </section>
+    <section class="card">
+      <h2>2 · The Race</h2>
+      <p>Pocket survival vs. how fast each position (and the top receivers) get open after being covered.</p>
+      <a href="the_race.html"><img src="the_race.png" alt="Pocket survival curve over median time-to-open bars by receiver"></a>
+      <div class="links"><a href="the_race.html">Interactive: every receiver with 150+ routes →</a></div>
+    </section>
+    <section class="card">
+      <h2>3 · The Cost of Ignoring</h2>
+      <p>Hitting the clearly-open downfield man: 79% completions and 14.7 yds/play vs. 65% and 6.7 elsewhere. With a clean pocket and 2.5 s+, QBs still passed on him 66% of the time, at a cost of 9.3 yds a play (16.6 vs. 7.3).</p>
+      <img src="cost_of_ignoring.png" alt="Bar charts, all plays vs clean pocket: 14.7 vs 6.7 and 16.6 vs 7.3 yards per play; 79% vs 65% and 85% vs 66% completion">
+    </section>
+    <section class="card">
+      <h2>4 · Player scouting card</h2>
+      <p>Pick any WR/TE/RB with 50+ routes and compare him with his position average, including how often he's ignored with a clean pocket.</p>
+      <a href="scouting_card.html"><img src="scouting_card_preview.png" alt="Scouting card for Cooper Kupp"></a>
+      <div class="links"><a href="scouting_card.html">Open the interactive card →</a></div>
+    </section>
+  </div>
+  <p class="key">Colour key used throughout:
+    <span class="sw" style="background:#1f6fb4"></span>WR <span class="sw" style="background:#8e44ad"></span>TE <span class="sw" style="background:#e67e22"></span>RB
+    <span class="sw" style="background:#1d3557"></span>offense <span class="sw" style="background:#f4f4f4;border:1px solid #999"></span>defense
+    <span class="sw" style="background:var(--open)"></span>open <span class="sw" style="background:var(--cover)"></span>covered.
+    Regenerate everything with <code>python make_viz.py</code>.</p>
+</main>
+</body>
+</html>
