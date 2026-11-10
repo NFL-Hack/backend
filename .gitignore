@@ -4,3 +4,4 @@ __pycache__/
 mock/
 outputs/*
 !outputs/play_clock.csv
+!outputs/routes.csv
