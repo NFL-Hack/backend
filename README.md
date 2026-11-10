@@ -1,4 +1,4 @@
-# Open, In Time: Was the Open Receiver a Real Chance?
+# Time to pressure (for QBs) and receiver ratings (WRs and TEs)
 
 **A tracking-based look at when receivers get open, whether it was in time to be thrown to, and who does it best.**
 
