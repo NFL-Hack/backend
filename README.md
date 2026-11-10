@@ -9,7 +9,6 @@
 </p>
 
 <p align="center">
-  <img src="figures/b4_bucket_waffle.png" width="49%" alt="Of 1,610 ignored open receivers: 29% open window missed, 32% too late, 39% not a real window">
   <img src="figures/b3_player_cards.png" width="49%" alt="Top 3 WRs and TEs by Clock Rating">
 </p>
 
