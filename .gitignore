@@ -1,0 +1,6 @@
+.venv/
+__pycache__/
+.DS_Store
+mock/
+outputs/*
+!outputs/play_clock.csv
