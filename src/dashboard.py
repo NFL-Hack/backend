@@ -155,6 +155,7 @@ def animated_play(a, play, out):
     with open(out, "w") as f:
         f.write(html)
     print("saved", out)
+    return fig
 
 
 # ---- dashboard page ----------------------------------------------------------------------
