@@ -4,7 +4,7 @@ On 2,229 plays in the 2021 NFL tracking data (weeks 1-8), a receiver 5+ yards do
 
 ¹ 7 plays dropped: no snap event. The earlier openness analysis in `analysis/` counts 2,236 plays and 621 targets, because it keeps them.
 
-**Visuals:** [`analysis/viz/index.html`](analysis/viz/index.html): play replay, cost of ignoring, why he was ignored, the race against the pocket, scouting card.
+**Visuals:** https://nfl-hack.github.io/backend/analysis/viz/ ([`analysis/viz/index.html`](analysis/viz/index.html)): play replay, cost of ignoring, why he was ignored, the race against the pocket, scouting card.
 
 ## What we built
 
