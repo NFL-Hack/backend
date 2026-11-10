@@ -15,13 +15,13 @@ On **2,229** plays a receiver was clear open downfield. QBs threw to him on 619 
 
 | bucket | share of ignored | sub-buckets |
 |---|---|---|
-| TOO_LATE | 32.2% | pressured 8.0%, late 24.2% |
-| NOT_REAL_WINDOW | 20.8% | blind 20.8%, closed 0.0% |
-| OPEN_WINDOW | 47.0% | missed 47.0% |
+| TOO_LATE | 32.4% | pressured 8.0%, late 24.3% |
+| NOT_REAL_WINDOW | 38.9% | blind 20.7%, closed 18.3% |
+| OPEN_WINDOW | 28.7% | missed 28.7% |
 
 When the clear-open receiver was targeted: **79.3%** completion, **14.72** yards/play. When he was ignored: **64.9%** completion, **6.69** yards/play.
 
-Nearly half of the ignored clear-open receivers were open in time, in the QB's sight, and still open when a throw would have arrived.
+On 462 plays (28.7% of the ignored ones), the QB passed up a receiver who opened before pressure, at least 0.4 s before the throw, in his sight, and was still open at the throw.
 
 ## Who uses it
 
@@ -56,8 +56,9 @@ Nearly half of the ignored clear-open receivers were open in time, in the QB's s
 - From `routes.csv`: the later of (a) the start of the final open stretch (sep ≥ 3 yd) that runs to the end frame and (b) the first time he is 5+ yd past the LOS.
 - If it is missing (he is not open at the end frame), the fallback is `max(1.0, start of the final continuous stretch of sep ≥ 3 at or before t_end)`, from `openness_frames.csv`.
 - `in_sight` is taken at the frame where `t == window_start`.
+- If `window_start` falls after the clock's end frame (69 routes), he opened after the QB's window closed, and the route counts as `late`.
 
-**Closed check.** `proj_sep_0_7 < 2.0`: the separation projected 0.7 s ahead at the throw. Fallback: `sep_at_throw < 2.0`.
+**Closed check.** `sep_at_throw < 3.0`: he wasn't actually open at the throw. This catches the fallback windows that had closed by the throw.
 
 **Buckets** (clear-open downfield receivers; first match wins):
 
@@ -65,20 +66,19 @@ Nearly half of the ignored clear-open receivers were open in time, in the QB's s
 |---|---|---|
 | `targeted` | n/a | QB threw to him |
 | `pressured` | TOO_LATE | `window_start` at or after the first pressure |
-| `late` | TOO_LATE | `window_start` < 0.4 s before `t_end` |
+| `late` | TOO_LATE | `window_start` < 0.4 s before `t_end`, or after the clock end frame |
 | `blind` | NOT_REAL_WINDOW | outside the QB's 90° sight cone at `window_start` |
-| `closed` | NOT_REAL_WINDOW | `proj_sep_0_7 < 2.0` |
+| `closed` | NOT_REAL_WINDOW | `sep_at_throw < 3.0` |
 | `missed` | OPEN_WINDOW | passed every check |
 
 Completion % is over pass attempts (C / I / IN). Yards/play is the mean `playResult`.
 
-**Receiver rating** (`receiver_rating.csv`, receivers with ≥ 30 routes):
+**Receiver rating** (`receiver_rating.csv`, WR and TE with ≥ 30 routes: 152 WR, 76 TE):
 - `window_rate`: share of his routes that pass every window check above: `window_start` exists, before pressure, ≥ 0.4 s before `t_end`, in sight at `window_start`, not closed.
 - `ttoe` (time-to-open over expected) uses `time_to_open_after_covered`: the first time he reaches 3+ yd of separation after a defender has been within 3 yd. The raw `time_to_open` is 0 on 82% of routes, because of the cushion at the snap.
   - Expected = the league median for his position × alignment (`pff_positionLinedUp`) × coverage type (`pff_passCoverageType`) cell.
   - `ttoe = median(expected over his routes) - median(his time_to_open_after_covered)`. Positive = he opens faster than expected.
-- `clock_rating = 100 × mean(percentile(window_rate), percentile(ttoe))`. **The two components are weighted equally.** Percentiles are among qualifying receivers.
-- A receiver with no `time_to_open_after_covered` has no `ttoe` and no rating.
+- `clock_rating = 100 × mean(percentile(window_rate), percentile(ttoe))`. **The two components are weighted equally.** Both percentiles are taken within position: WR against WR, TE against TE.
 
 ## Assumptions
 
@@ -87,21 +87,20 @@ Completion % is over pass attempts (C / I / IN). Yards/play is the mean `playRes
   - 90° sight half-angle
   - 0.4 s minimum lead
   - 3.0 yd open
-  - 2.0 yd closed
+  - 3.0 yd at the throw to count as still open
   - 1.0 s window floor
   - 30-route minimum
 
   They live in `src/common.py` and at the top of `src/combine.py`.
 - Body orientation `o` stands in for where the QB is looking. Head and eye direction are not tracked.
-- A receiver with no sight frame at `window_start` counts as not in sight (69 routes).
+- A receiver with no sight frame at `window_start` counts as not in sight (0 routes on the current data).
 
 ## Limitations
 
-- **Tracking ends at the throw.** `proj_sep_0_7` is a projection, not an observation of separation at the catch point.
+- **Tracking ends at the throw.** "Still open" is measured at the throw, not at the catch point, so a window that closes during the ball's flight still counts as open.
 - **Open does not mean the QB should throw.** Down and distance, a post-snap coverage read, a better option elsewhere, or the designed progression can all make passing on an open man correct. `missed` means "unexplained by clock or sight", not "QB error".
-- **`closed` is empty by construction.** The clear-open definition already requires the highest projected separation (minimum 2.01 yd on these plays), so `NOT_REAL_WINDOW` is all `blind`.
-- **The fallback `window_start` describes a window that had closed by the throw** (he was not open at the end frame). It covers 511 of the 2,229 plays, and 294 of those land in `missed`.
-- **`window_rate` is not position-adjusted.** RBs lead it (median rating: RB 58, TE 49, WR 44). Compare receivers within a position.
+- **RBs excluded:** mostly short checkdowns where coverage-only separation overstates openness. RBs are still in the buckets and the headline; they are only left out of the rating.
+- **`ttoe` is coarse.** Times are in 0.1 s steps, so many receivers tie on `ttoe`, and small samples (30-40 routes) can reach the top of the list.
 - Pressure is a proximity proxy. It misses pressure that moves the QB off his spot from 3+ yd away, and it counts rushers engaged with a blocker inside 2 yd.
 - Small position × alignment × coverage cells make `expected` noisy for rare alignments.
 - 8 weeks of one season.

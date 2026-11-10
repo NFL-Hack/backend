@@ -26,8 +26,9 @@ RKEYS = KEYS + ["nflId"]
 
 OPEN_SEP = 3.0          # sep >= 3 yd = open (shared openness definition)
 WINDOW_FLOOR_S = 1.0    # fallback window_start is never earlier than this
-CLOSED_SEP = 2.0        # projected separation below this = window closed
+CLOSED_SEP = 3.0        # sep_at_throw below this = not open at the throw = window closed
 POSITIONS = ["WR", "TE", "RB"]   # FB is folded into RB
+RATED_POSITIONS = ["WR", "TE"]   # RBs excluded from the rating (short checkdowns)
 NO_RATE = ["S", "R"]    # sacks and scrambles: excluded from the ignored/targeted analysis
 INSIGHT_EXPECT = 0.90   # sanity floor for "targeted receivers in sight at the throw"
 
@@ -43,9 +44,9 @@ OPTIONAL = ["window_start", "proj_sep_0_7"]
 BUCKETS = [
     ("targeted", None, "QB threw to him"),
     ("pressured", "TOO_LATE", "his window opened at or after the first pressure"),
-    ("late", "TOO_LATE", f"his window opened < {MIN_LEAD_S}s before t_end (or never)"),
+    ("late", "TOO_LATE", f"window opened < {MIN_LEAD_S}s before t_end, or after the throw"),
     ("blind", "NOT_REAL_WINDOW", "outside the QB's sight cone at window_start"),
-    ("closed", "NOT_REAL_WINDOW", f"projected separation < {CLOSED_SEP} yd"),
+    ("closed", "NOT_REAL_WINDOW", f"sep_at_throw < {CLOSED_SEP} yd: not open at the throw"),
     ("missed", "OPEN_WINDOW", "in time, in sight, still open: QB passed him up"),
 ]
 SUB_TO_B3 = {b: b3 for b, b3, _ in BUCKETS if b3}
@@ -119,10 +120,8 @@ def build(r: pd.DataFrame) -> pd.DataFrame:
     df["window_start"] = df["window_start"].fillna(df["ws_fallback"])
     df = df.drop(columns="ws_fallback")
 
-    # Closed check: proj_sep_0_7 < 2.0, fallback sep_at_throw < 2.0.
-    df["closed_src"] = np.where(df["proj_sep_0_7"].notna(), "proj_sep_0_7", "sep_at_throw")
-    df["closed_sep"] = df["proj_sep_0_7"].fillna(df["sep_at_throw"])
-    df["window_closed"] = df["closed_sep"] < CLOSED_SEP
+    # Closed check: he wasn't actually open at the throw.
+    df["window_closed"] = df["sep_at_throw"] < CLOSED_SEP
 
     # Sight at the frame where t == window_start, and at the throw (end_frame).
     sight = pd.read_csv(OUT / "qb_sight_frames.csv",
@@ -135,16 +134,19 @@ def build(r: pd.DataFrame) -> pd.DataFrame:
                   on=RKEYS + ["end_frame"], how="left")
     for c in ["in_sight", "in_sight_at_throw"]:
         df[c] = df[c].astype("Int8")
-    lost = (df["window_start"].notna() & df["angle_off_qb"].isna()).sum()
-    if lost:
-        print(f"note: {lost:,} routes with a window_start have no sight frame there "
-              f"(past the clock end frame or untracked); counted as not in sight")
+    # window_start past the clock's end frame = he opened after the QB's window: late.
+    df["ws_after_end"] = (df["ws_frame"] > df["end_frame"]).fillna(False).astype(bool)
+    untracked = (df["window_start"].notna() & ~df["ws_after_end"]
+                 & df["angle_off_qb"].isna()).sum()
+    print(f"note: {df['ws_after_end'].sum():,} routes have window_start past the clock end "
+          f"frame (counted late); {untracked:,} have no sight frame otherwise (not in sight)")
 
     # Window components (t_end from routes.csv, the same clock window_start was built on).
     has_ws = df["window_start"].notna()
     df["before_pressure"] = has_ws & (df["time_to_pressure"].isna()
                                       | (df["window_start"] < df["time_to_pressure"]))
-    df["lead_ok"] = has_ws & (df["t_end"] - df["window_start"] >= MIN_LEAD_S - 1e-9)
+    df["lead_ok"] = (has_ws & ~df["ws_after_end"]
+                     & (df["t_end"] - df["window_start"] >= MIN_LEAD_S - 1e-9))
     df["sighted"] = df["in_sight"].fillna(0).astype(bool)
     df["in_window"] = (df["before_pressure"] & df["lead_ok"] & df["sighted"]
                        & ~df["window_closed"])
@@ -163,7 +165,7 @@ def build(r: pd.DataFrame) -> pd.DataFrame:
             "passResult", "playResult", "downfield_yds", "sep_at_throw", "proj_sep_0_7",
             "time_to_open_after_covered", "t_end", "end_event", "time_to_pressure",
             "n_rushers", "window_start", "window_start_src", "ws_frame", "angle_off_qb",
-            "in_sight", "angle_at_throw", "in_sight_at_throw", "closed_sep", "closed_src",
+            "in_sight", "angle_at_throw", "in_sight_at_throw", "end_frame", "ws_after_end",
             "before_pressure", "lead_ok", "window_closed", "in_window", "bucket", "bucket3"]
     return df[cols]
 
@@ -206,7 +208,9 @@ def headline(df: pd.DataFrame) -> None:
 
 
 def rate(df: pd.DataFrame) -> pd.DataFrame:
+    """WR and TE only; percentiles are taken within position."""
     cell = ["position", "alignment", "coverage_type"]
+    df = df[df["position"].isin(RATED_POSITIONS)]
     tt = df[df["time_to_open_after_covered"].notna()].copy()
     tt["expected"] = tt.groupby(cell)["time_to_open_after_covered"].transform("median")
 
@@ -221,10 +225,11 @@ def rate(df: pd.DataFrame) -> pd.DataFrame:
     per["n_opened"] = per["n_opened"].fillna(0).astype(int)
     per = per[per["n_routes"] >= MIN_ROUTES].copy()
     per["ttoe"] = per["expected_ttoc"] - per["median_ttoc"]  # positive = opens faster
-    per["pct_window"] = per["window_rate"].rank(pct=True)
-    per["pct_ttoe"] = per["ttoe"].rank(pct=True)
+    by_pos = per.groupby("position")
+    per["pct_window"] = by_pos["window_rate"].rank(pct=True)
+    per["pct_ttoe"] = by_pos["ttoe"].rank(pct=True)
     per["clock_rating"] = 100 * per[["pct_window", "pct_ttoe"]].mean(axis=1, skipna=False)
-    per = per.sort_values("clock_rating", ascending=False).reset_index()
+    per = per.sort_values(["position", "clock_rating"], ascending=[False, False]).reset_index()
     return per.round({"window_rate": 4, "median_ttoc": 2, "expected_ttoc": 2, "ttoe": 2,
                       "pct_window": 4, "pct_ttoe": 4, "clock_rating": 1})
 
@@ -239,19 +244,21 @@ def main() -> None:
     df = build(apply_filters(load_routes(args.routes)))
     df.to_csv(OUT / "buckets.csv", index=False, float_format="%.3f")
     src = df.loc[df["analyzed"], "window_start_src"].value_counts().to_dict()
-    csrc = df.loc[df["analyzed"], "closed_src"].value_counts().to_dict()
-    print(f"buckets.csv: {len(df):,} routes; clear-open window_start source {src}; "
-          f"closed check source {csrc}")
+    print(f"buckets.csv: {len(df):,} routes; clear-open window_start source {src}")
 
     sight_check(df)
     headline(df)
 
     rating = rate(df)
     rating.to_csv(OUT / "receiver_rating.csv", index=False)
-    print(f"\nreceiver_rating.csv: {len(rating):,} receivers with >= {MIN_ROUTES} routes "
+    counts = rating["position"].value_counts().to_dict()
+    print(f"\nreceiver_rating.csv: {len(rating):,} WR/TE with >= {MIN_ROUTES} routes {counts} "
           f"({rating['ttoe'].isna().sum()} without a ttoe, so no rating)")
-    print(rating.head(10)[["displayName", "position", "n_routes", "window_rate", "ttoe",
-                           "clock_rating"]].to_string(index=False))
+    show = ["displayName", "n_routes", "window_rate", "ttoe", "pct_window", "pct_ttoe",
+            "clock_rating"]
+    for pos, k in [("WR", 10), ("TE", 5)]:
+        print(f"\nTop {k} {pos}:")
+        print(rating[rating["position"] == pos].head(k)[show].to_string(index=False))
 
 
 if __name__ == "__main__":
