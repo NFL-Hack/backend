@@ -16,6 +16,8 @@ from plotly.subplots import make_subplots
 from common import CLOCK_DIR, FONT, INK, MUTED, OUT, POS_COL, clock_available, load_openness, load_player_summary
 
 DEFAULT = "Cooper Kupp"
+MIN_ROUTES = {"WR": 75, "TE": 50}                # card population; RBs excluded (see README)
+RATING_CSV = _os.path.join(_os.path.dirname(ANALYSIS), "outputs", "receiver_rating.csv")
 MIN_CLEAN = 40
 CLEAN_CSV = f"{ANALYSIS}/pressure/player_clean_ignored.csv"
 BINS = np.arange(0, 13, 1.0)                     # openness bins (yds), last bin = 12+
@@ -31,7 +33,11 @@ def hist(o):
 def build():
     ro = load_openness()
     ps = load_player_summary()
-    ps = ps[ps.pos.isin(["WR", "TE", "RB"])]
+    ps = ps[ps.pos.map(MIN_ROUTES).le(ps.routes)]          # WR >= 75 routes, TE >= 50; no RBs
+    rt = pd.read_csv(RATING_CSV)[["nflId", "clock_rating", "window_rate", "ttoe"]]
+    ps = ps.merge(rt, on="nflId", how="left")
+    ps["rating_rank"] = ps.groupby("pos").clock_rating.rank(ascending=False, method="min")
+    ps["rating_n"] = ps.groupby("pos").clock_rating.transform("count")
     ro = ro[ro.nflId.isin(ps.nflId)]
     mz = ro[ro.pff_passCoverageType.isin(["Man", "Zone"])].groupby(["nflId", "pff_passCoverageType"]).openness.mean().unstack()
     ps = ps.join(mz.rename(columns={"Man": "open_man", "Zone": "open_zone"}), on="nflId")
@@ -104,9 +110,18 @@ def player_state(r, hists, pos_hist, pa, has_clock):
         take = f"rarely ignored when {what} ({ratio:.1f}× the avg {p})"
     else:
         take = f"ignored when {what} about as often as the avg {p}"
-    title = (f"<b>{r.displayName}</b>  <span style='color:{c}'>{p}</span> · {r.possessionTeam} · {int(r.routes)} routes: {take}"
-             f"<br><span style='font-size:13px;color:{MUTED}'>Colored = {r.displayName}; grey bars / black line = average {p} (≥50 routes). "
-             f"Openness = yds to nearest defender projected 0.7s after the throw. Weeks 1–8, 2021.</span>")
+    rank = "" if pd.isna(r.rating_rank) else f" · #{int(r.rating_rank)} of {int(r.rating_n)} {p}s on this card"
+    ttoe = "–" if pd.isna(r.ttoe) else f"{r.ttoe:+.2f}s"
+    rating = (f"<span style='font-size:26px;color:{c}'><b>clock_rating {num(r.clock_rating, '{:.0f}')}</b></span>"
+              f"<span style='font-size:15px'>{rank}   ·   window_rate <b>{pct(r.window_rate)}</b>"
+              f" <span style='color:{MUTED}'>({p} avg {pct(a.window_rate)})</span>   ·   ttoe <b>{ttoe}</b>"
+              f" <span style='color:{MUTED}'>(+ = opens faster than expected)</span></span>")
+    title = (f"<b>{r.displayName}</b>  <span style='color:{c}'>{p}</span> · {r.possessionTeam} · {int(r.routes)} routes"
+             f"<br>{rating}"
+             f"<br><span style='font-size:14px'>{take}</span>"
+             f"<br><span style='font-size:12px;color:{MUTED}'>Colored = {r.displayName}; grey bars / black line = average {p} "
+             f"(WR ≥75 routes, TE ≥50). clock_rating = 100 × mean of within-position percentiles of window_rate and ttoe."
+             f"<br>Openness = yds to nearest defender projected 0.7s after the throw. Weeks 1–8, 2021.</span>")
     return tr, card, title
 
 
@@ -151,9 +166,9 @@ def main():
                                    "text": [t["text"] for t in tr]},
                                   {"title.text": title, "annotations": anns(card)}]))
     fig.update_layout(
-        title=dict(text=title0, x=0.01, y=0.97, font=dict(size=20, family=FONT)),
+        title=dict(text=title0, x=0.01, y=0.975, yanchor="top", font=dict(size=20, family=FONT)),
         annotations=anns(card0), template="simple_white", font=dict(family=FONT, size=12), barmode="group", bargap=0.25,
-        height=850, width=1300, margin=dict(t=175, l=60, r=30, b=60), showlegend=False,
+        height=940, width=1300, margin=dict(t=265, l=60, r=30, b=60), showlegend=False,
         updatemenus=[dict(buttons=buttons, active=int(ps.index[ps.displayName == DEFAULT][0]), x=0.085, xanchor="left",
                           y=1.13, yanchor="top", direction="down", showactive=True, bgcolor="white",
                           font=dict(size=13), pad=dict(r=4, t=4))],
