@@ -5,3 +5,5 @@ mock/
 outputs/*
 !outputs/play_clock.csv
 !outputs/routes.csv
+!outputs/buckets.csv
+!outputs/receiver_rating.csv

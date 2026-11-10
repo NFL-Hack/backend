@@ -1,14 +1,14 @@
 """Join routes + play_clock + qb_sight, assign buckets, print the headline, rate receivers.
 
 Inputs
-  routes.csv (contract below), outputs/play_clock.csv, outputs/qb_sight_frames.csv
+  outputs/routes.csv            from src/openness.py (Yatharth)
+  outputs/openness_frames.csv   from src/openness.py, only for the window_start fallback
+  outputs/play_clock.csv, outputs/qb_sight_frames.csv   from src/clock.py
 Outputs
-  outputs/buckets.csv           one row per route, with window flags and bucket
+  outputs/buckets.csv           one row per route, with window flags and buckets
   outputs/receiver_rating.csv   one row per receiver with >= MIN_ROUTES routes
 
-Usage
-  python src/combine.py --routes mock/routes.csv      # now
-  python src/combine.py --routes outputs/routes.csv   # once the real file lands
+Usage: python src/combine.py [--routes outputs/routes.csv]
 """
 from __future__ import annotations
 
@@ -19,169 +19,213 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from common import (FPS, MIN_LEAD_S, MIN_ROUTES, OUT, load_players, load_plays,
-                    load_scouting)
+from common import FPS, MIN_LEAD_S, MIN_ROUTES, OUT, load_plays
 
 KEYS = ["gameId", "playId"]
 RKEYS = KEYS + ["nflId"]
 
-# routes.csv contract: one row per route runner per play.
-#   time_to_open     seconds after snap the receiver first became open; blank if never
-#   open_on_arrival  1 if still open when a ball thrown at time_to_open would arrive
-#   clear_open       1 if this was a clear-open opportunity
-#   targeted         1 if this receiver was the intended target
-CONTRACT = ["gameId", "playId", "nflId", "time_to_open", "open_on_arrival",
-            "clear_open", "targeted"]
+OPEN_SEP = 3.0          # sep >= 3 yd = open (shared openness definition)
+WINDOW_FLOOR_S = 1.0    # fallback window_start is never earlier than this
+CLOSED_SEP = 2.0        # projected separation below this = window closed
+POSITIONS = ["WR", "TE", "RB"]   # FB is folded into RB
+NO_RATE = ["S", "R"]    # sacks and scrambles: excluded from the ignored/targeted analysis
+INSIGHT_EXPECT = 0.90   # sanity floor for "targeted receivers in sight at the throw"
 
-# Bucket rules for a clear-open receiver, checked in this order; first match wins.
-# All but "targeted" mean the receiver was ignored.
+# routes.csv columns this script needs. window_start and proj_sep_0_7 are optional:
+# if a column (or a value) is missing, the fallbacks below are used.
+REQUIRED = ["gameId", "playId", "nflId", "displayName", "position", "alignment",
+            "coverage_type", "t_end", "sep_at_throw", "downfield_yds", "is_target",
+            "is_clear_open_downfield", "passResult", "playResult",
+            "time_to_open_after_covered"]
+OPTIONAL = ["window_start", "proj_sep_0_7"]
+
+# Sub-buckets for a clear-open downfield receiver, checked in order; first match wins.
 BUCKETS = [
-    ("targeted", "QB threw to him"),
-    ("pressured", "he opened at or after the first pressure"),
-    ("late", f"he opened less than {MIN_LEAD_S}s before t_end"),
-    ("blind", "he was outside the QB's sight cone when he opened"),
-    ("closed", "he was no longer open when the ball would have arrived"),
-    ("missed", "in sight, in time, no pressure, open on arrival: QB passed him up"),
+    ("targeted", None, "QB threw to him"),
+    ("pressured", "TOO_LATE", "his window opened at or after the first pressure"),
+    ("late", "TOO_LATE", f"his window opened < {MIN_LEAD_S}s before t_end (or never)"),
+    ("blind", "NOT_REAL_WINDOW", "outside the QB's sight cone at window_start"),
+    ("closed", "NOT_REAL_WINDOW", f"projected separation < {CLOSED_SEP} yd"),
+    ("missed", "OPEN_WINDOW", "in time, in sight, still open: QB passed him up"),
 ]
-IGNORED = [b for b, _ in BUCKETS if b != "targeted"]
+SUB_TO_B3 = {b: b3 for b, b3, _ in BUCKETS if b3}
+IGNORED = [b for b, b3, _ in BUCKETS if b3]
+BUCKET3 = ["TOO_LATE", "NOT_REAL_WINDOW", "OPEN_WINDOW"]
 
 
 def load_routes(path: Path) -> pd.DataFrame:
     r = pd.read_csv(path)
-    missing = [c for c in CONTRACT if c not in r.columns]
+    missing = [c for c in REQUIRED if c not in r.columns]
     if missing:
-        sys.exit(f"{path} is missing contract columns: {missing}")
-    r = r[CONTRACT].copy()
-    for c in ["open_on_arrival", "clear_open", "targeted"]:
-        r[c] = r[c].fillna(0).astype(bool)
-    dups = r.duplicated(RKEYS).sum()
-    if dups:
-        sys.exit(f"{path} has {dups} duplicate (gameId, playId, nflId) rows")
-    bad = (r["clear_open"] & r["time_to_open"].isna()).sum()
-    if bad:
-        print(f"WARNING: {bad} clear_open routes have no time_to_open; bucketed 'late'")
+        sys.exit(f"{path} is missing required columns: {missing}")
+    for c in OPTIONAL:
+        if c not in r.columns:
+            print(f"note: {path.name} has no {c} column; using the fallback for every route")
+            r[c] = np.nan
+    r = r[REQUIRED + OPTIONAL].copy()
+    for c in ["is_target", "is_clear_open_downfield"]:
+        r[c] = r[c].astype(str).str.lower().isin(["true", "1"])
+    if r.duplicated(RKEYS).any():
+        sys.exit(f"{path} has duplicate (gameId, playId, nflId) rows")
     return r
 
 
-def build(routes: pd.DataFrame) -> pd.DataFrame:
-    clock = pd.read_csv(OUT / "play_clock.csv")
-    df = routes.merge(clock, on=KEYS, how="inner")
-    lost = len(routes) - len(df)
-    if lost:
-        print(f"note: {lost:,} routes had no play_clock row (no snap/QB) and were dropped")
+def apply_filters(r: pd.DataFrame) -> pd.DataFrame:
+    n0, p0 = len(r), r[KEYS].drop_duplicates().shape[0]
+    plays = load_plays()
+    noplay = plays.loc[plays["playDescription"].str.contains("No Play", na=False), KEYS]
+    r = r.merge(noplay.assign(_np=True), on=KEYS, how="left")
+    n_np = int(r["_np"].eq(True).sum())
+    r = r[~r["_np"].eq(True)].drop(columns="_np")
+    r["position"] = r["position"].replace({"FB": "RB"})
+    n_pos = int((~r["position"].isin(POSITIONS)).sum())
+    r = r[r["position"].isin(POSITIONS)]
+    print(f"filters: {n0:,} routes / {p0:,} plays in; dropped {n_np:,} 'No Play' routes and "
+          f"{n_pos:,} non-WR/TE/RB routes; {len(r):,} routes / "
+          f"{r[KEYS].drop_duplicates().shape[0]:,} plays left")
+    return r.reset_index(drop=True)
 
-    # Sight at the frame matching time_to_open.
-    df["open_frame"] = (df["snap_frame"] + (df["time_to_open"] * FPS).round()).astype("Int64")
+
+def fallback_window_start(need: pd.DataFrame) -> pd.Series:
+    """max(1.0, start of the final continuous stretch of sep >= 3 at or before t_end).
+    NaN if he is never open before t_end. Missing sep counts as not open."""
+    path = OUT / "openness_frames.csv"
+    if not path.exists():
+        sys.exit(f"{path} not found (needed for the window_start fallback). "
+                 f"Regenerate with: python src/openness.py")
+    f = pd.read_csv(path)
+    f = f.merge(need[RKEYS + ["t_end"]], on=RKEYS)
+    f = f[f["t"] <= f["t_end"] + 1e-9].sort_values(RKEYS + ["t"])
+    t, op = f["t"], f["sep"] >= OPEN_SEP
+    grp = [f[k] for k in RKEYS]
+    last_open = t.where(op).groupby(grp).transform("max")
+    last_closed = t.where(~op & (t < last_open)).groupby(grp).transform("max")
+    start = t.where(op & (t > last_closed.fillna(-np.inf))).groupby(grp).min()
+    return np.fmax(start, WINDOW_FLOOR_S).rename("ws_fallback")
+
+
+def build(r: pd.DataFrame) -> pd.DataFrame:
+    clock = pd.read_csv(OUT / "play_clock.csv").rename(columns={"t_end": "t_end_clock"})
+    df = r.merge(clock, on=KEYS, how="inner")
+    if len(df) < len(r):
+        print(f"note: {len(r) - len(df):,} routes had no play_clock row and were dropped")
+
+    # Opening time for buckets = window_start, with the openness-frames fallback.
+    need = df["window_start"].isna()
+    fb = fallback_window_start(df[need])
+    df = df.join(fb, on=RKEYS)
+    df["window_start_src"] = np.where(~need, "routes",
+                                      np.where(df["ws_fallback"].notna(), "fallback", "none"))
+    df["window_start"] = df["window_start"].fillna(df["ws_fallback"])
+    df = df.drop(columns="ws_fallback")
+
+    # Closed check: proj_sep_0_7 < 2.0, fallback sep_at_throw < 2.0.
+    df["closed_src"] = np.where(df["proj_sep_0_7"].notna(), "proj_sep_0_7", "sep_at_throw")
+    df["closed_sep"] = df["proj_sep_0_7"].fillna(df["sep_at_throw"])
+    df["window_closed"] = df["closed_sep"] < CLOSED_SEP
+
+    # Sight at the frame where t == window_start, and at the throw (end_frame).
     sight = pd.read_csv(OUT / "qb_sight_frames.csv",
                         usecols=RKEYS + ["frameId", "angle_off_qb", "in_sight"])
-    df = df.merge(sight.rename(columns={"frameId": "open_frame"}),
-                  on=RKEYS + ["open_frame"], how="left")
-    df["in_sight"] = df["in_sight"].astype("Int8")
-    no_sight = (df["time_to_open"].notna() & df["angle_off_qb"].isna()).sum()
-    if no_sight:
-        print(f"note: {no_sight:,} opened routes had no sight frame at time_to_open "
-              f"(after end_frame or untracked); treated as not in sight")
+    df["ws_frame"] = (df["snap_frame"] + (df["window_start"] * FPS).round()).astype("Int64")
+    df = df.merge(sight.rename(columns={"frameId": "ws_frame"}), on=RKEYS + ["ws_frame"],
+                  how="left")
+    df = df.merge(sight.rename(columns={"frameId": "end_frame", "angle_off_qb": "angle_at_throw",
+                                        "in_sight": "in_sight_at_throw"}),
+                  on=RKEYS + ["end_frame"], how="left")
+    for c in ["in_sight", "in_sight_at_throw"]:
+        df[c] = df[c].astype("Int8")
+    lost = (df["window_start"].notna() & df["angle_off_qb"].isna()).sum()
+    if lost:
+        print(f"note: {lost:,} routes with a window_start have no sight frame there "
+              f"(past the clock end frame or untracked); counted as not in sight")
 
-    # Context for buckets, rating, and outcomes.
-    roles = load_scouting().rename(columns={"pff_positionLinedUp": "alignment"})
-    df = df.merge(roles[RKEYS + ["alignment"]], on=RKEYS, how="left")
-    df = df.merge(load_players().rename(columns={"officialPosition": "position"}),
-                  on="nflId", how="left")
-    plays = load_plays()[KEYS + ["pff_passCoverageType", "passResult", "playResult"]]
-    df = df.merge(plays.rename(columns={"pff_passCoverageType": "coverage_type"}),
-                  on=KEYS, how="left")
-
-    # Window components.
-    opened = df["time_to_open"].notna()
-    df["before_pressure"] = opened & (df["time_to_pressure"].isna()
-                                      | (df["time_to_open"] < df["time_to_pressure"]))
-    df["lead_ok"] = opened & (df["t_end"] - df["time_to_open"] >= MIN_LEAD_S - 1e-9)
-    df["sighted"] = df["in_sight"].fillna(0).astype(bool)  # no sight data = not in sight
+    # Window components (t_end from routes.csv, the same clock window_start was built on).
+    has_ws = df["window_start"].notna()
+    df["before_pressure"] = has_ws & (df["time_to_pressure"].isna()
+                                      | (df["window_start"] < df["time_to_pressure"]))
+    df["lead_ok"] = has_ws & (df["t_end"] - df["window_start"] >= MIN_LEAD_S - 1e-9)
+    df["sighted"] = df["in_sight"].fillna(0).astype(bool)
     df["in_window"] = (df["before_pressure"] & df["lead_ok"] & df["sighted"]
-                       & df["open_on_arrival"])
+                       & ~df["window_closed"])
 
-    # Buckets (clear-open routes only).
-    conds = [
-        df["targeted"],
-        opened & ~df["before_pressure"],
-        ~df["lead_ok"],
-        ~df["sighted"],
-        ~df["open_on_arrival"],
-        pd.Series(True, index=df.index),
-    ]
-    df["bucket"] = np.select([c.to_numpy(bool) for c in conds], [b for b, _ in BUCKETS],
+    # Buckets: clear-open downfield receivers on non-sack, non-scramble plays.
+    df["analyzed"] = df["is_clear_open_downfield"] & ~df["passResult"].isin(NO_RATE)
+    conds = [df["is_target"], has_ws & ~df["before_pressure"], ~df["lead_ok"],
+             ~df["sighted"], df["window_closed"], pd.Series(True, index=df.index)]
+    df["bucket"] = np.select([c.to_numpy(bool) for c in conds], [b for b, _, _ in BUCKETS],
                              default="")
-    df.loc[~df["clear_open"], "bucket"] = ""
-
-    # Play-level unit for the headline: the earliest-opening clear-open receiver.
-    co = df[df["clear_open"]].sort_values(KEYS + ["time_to_open", "nflId"])
-    play_targeted = co.groupby(KEYS)["targeted"].transform("any")
-    co = co.assign(play_co_targeted=play_targeted)
-    primary = co[~co["play_co_targeted"]].drop_duplicates(KEYS).index
-    df["headline_primary"] = df.index.isin(primary)
-    df = df.merge(co.groupby(KEYS)["play_co_targeted"].first().reset_index(),
-                  on=KEYS, how="left")
-    df["play_co_targeted"] = df["play_co_targeted"].astype("boolean")  # NA: no clear-open
+    df.loc[~df["analyzed"], "bucket"] = ""
+    df["bucket3"] = df["bucket"].map(SUB_TO_B3).fillna("")
 
     cols = ["gameId", "playId", "nflId", "displayName", "position", "alignment",
-            "coverage_type", "time_to_open", "open_on_arrival", "clear_open", "targeted",
-            "snap_frame", "end_frame", "t_end", "end_event", "time_to_pressure",
-            "n_rushers", "open_frame", "angle_off_qb", "in_sight", "before_pressure",
-            "lead_ok", "in_window", "bucket", "headline_primary", "play_co_targeted",
-            "passResult", "playResult"]
+            "coverage_type", "is_clear_open_downfield", "is_target", "analyzed",
+            "passResult", "playResult", "downfield_yds", "sep_at_throw", "proj_sep_0_7",
+            "time_to_open_after_covered", "t_end", "end_event", "time_to_pressure",
+            "n_rushers", "window_start", "window_start_src", "ws_frame", "angle_off_qb",
+            "in_sight", "angle_at_throw", "in_sight_at_throw", "closed_sep", "closed_src",
+            "before_pressure", "lead_ok", "window_closed", "in_window", "bucket", "bucket3"]
     return df[cols]
 
 
-def headline(df: pd.DataFrame) -> None:
-    plays = df[df["clear_open"]].groupby(KEYS).agg(
-        targeted=("play_co_targeted", "first"),
-        passResult=("passResult", "first"),
-        playResult=("playResult", "first"),
-    )
-    plays["targeted"] = plays["targeted"].astype(bool)
-    ignored = df[df["headline_primary"]]
-    n_co, n_ign = len(plays), len(ignored)
-    print("\n=== HEADLINE ===")
-    print(f"{n_co:,} plays had a clear-open receiver; on {n_ign:,} "
-          f"({n_ign / max(n_co, 1):.1%}) no clear-open receiver was targeted.")
-    if n_ign:
-        print("Why the clear-open receiver was ignored (earliest-opening one per play):")
-        shares = ignored["bucket"].value_counts(normalize=True)
-        desc = dict(BUCKETS)
-        for b in IGNORED:
-            print(f"  {b:<10}{shares.get(b, 0):6.1%}   {desc[b]}")
+def sight_check(df: pd.DataFrame) -> None:
+    tg = df[df["is_target"] & df["end_event"].isin(["pass_forward", "autoevent_passforward"])]
+    ok = tg["in_sight_at_throw"].notna()
+    rate = tg.loc[ok, "in_sight_at_throw"].astype(bool).mean()
+    print(f"\nSight check: {rate:.1%} of targeted receivers are in the QB's sight at the throw "
+          f"(n={ok.sum():,}; {(~ok).sum()} without a sight frame)")
+    if rate < INSIGHT_EXPECT:
+        print(f"  FLAG: below the expected {INSIGHT_EXPECT:.0%}. Check the angle convention "
+              f"or the QB orientation before trusting the 'blind' bucket.")
 
-    print("\nOutcomes on clear-open plays:")
-    for label, g in [("clear-open receiver targeted", plays[plays["targeted"]]),
-                     ("clear-open receiver ignored ", plays[~plays["targeted"]])]:
+
+def headline(df: pd.DataFrame) -> None:
+    co = df[df["analyzed"]]
+    n = co[KEYS].drop_duplicates().shape[0]
+    if len(co) != n:
+        print(f"note: {len(co) - n} plays have more than one clear-open receiver")
+    ign = co[~co["is_target"]]
+    print("\n=== HEADLINE ===")
+    print(f"{n:,} clear-open downfield plays (sacks/scrambles and 'No Play' excluded). "
+          f"The clear-open receiver was ignored on {len(ign):,} ({len(ign) / max(n, 1):.1%}).")
+    print("Why he was ignored:")
+    b3 = ign["bucket3"].value_counts(normalize=True)
+    sub = ign["bucket"].value_counts(normalize=True)
+    for big in BUCKET3:
+        print(f"  {big:<16}{b3.get(big, 0):6.1%}")
+        for b, bb, desc in BUCKETS:
+            if bb == big:
+                print(f"    {b:<12}{sub.get(b, 0):6.1%}   {desc}")
+
+    print("\nOutcomes on clear-open downfield plays:")
+    for label, g in [("targeted", co[co["is_target"]]), ("ignored ", ign)]:
         att = g["passResult"].isin(["C", "I", "IN"])
         comp = (g["passResult"] == "C").sum() / max(att.sum(), 1)
-        print(f"  {label}: n={len(g):,}  completion% {comp:.1%} "
-              f"(of {att.sum():,} attempts)  yards/play {g['playResult'].mean():.2f}")
+        print(f"  {label}: n={len(g):,}  completion {comp:.1%}  "
+              f"yards/play {g['playResult'].mean():.2f}")
 
 
 def rate(df: pd.DataFrame) -> pd.DataFrame:
     cell = ["position", "alignment", "coverage_type"]
-    opened = df[df["time_to_open"].notna()].copy()
-    opened["expected_tto"] = opened.groupby(cell, dropna=False)["time_to_open"].transform(
-        "median")
+    tt = df[df["time_to_open_after_covered"].notna()].copy()
+    tt["expected"] = tt.groupby(cell)["time_to_open_after_covered"].transform("median")
 
     per = df.groupby("nflId").agg(displayName=("displayName", "first"),
-                                  position=("position", "first"),
+                                  position=("position", lambda s: s.mode().iat[0]),
                                   n_routes=("in_window", "size"),
                                   window_rate=("in_window", "mean"))
-    tt = opened.groupby("nflId").agg(n_opened=("time_to_open", "size"),
-                                     median_tto=("time_to_open", "median"),
-                                     expected_tto=("expected_tto", "median"))
-    per = per.join(tt)
+    per = per.join(tt.groupby("nflId").agg(
+        n_opened=("time_to_open_after_covered", "size"),
+        median_ttoc=("time_to_open_after_covered", "median"),
+        expected_ttoc=("expected", "median")))
     per["n_opened"] = per["n_opened"].fillna(0).astype(int)
     per = per[per["n_routes"] >= MIN_ROUTES].copy()
-    per["ttoe"] = per["expected_tto"] - per["median_tto"]  # positive = opens faster
+    per["ttoe"] = per["expected_ttoc"] - per["median_ttoc"]  # positive = opens faster
     per["pct_window"] = per["window_rate"].rank(pct=True)
     per["pct_ttoe"] = per["ttoe"].rank(pct=True)
     per["clock_rating"] = 100 * per[["pct_window", "pct_ttoe"]].mean(axis=1, skipna=False)
     per = per.sort_values("clock_rating", ascending=False).reset_index()
-    return per.round({"window_rate": 4, "median_tto": 2, "expected_tto": 2, "ttoe": 2,
+    return per.round({"window_rate": 4, "median_ttoc": 2, "expected_ttoc": 2, "ttoe": 2,
                       "pct_window": 4, "pct_ttoe": 4, "clock_rating": 1})
 
 
@@ -190,25 +234,24 @@ def main() -> None:
     ap.add_argument("--routes", type=Path, default=OUT / "routes.csv")
     args = ap.parse_args()
     if not args.routes.exists():
-        sys.exit(f"{args.routes} not found. Use --routes mock/routes.csv until the real "
-                 f"file lands (python src/make_mock_routes.py builds it).")
-    is_mock = "mock" in str(args.routes).lower()
-    if is_mock:
-        print("*** RUNNING ON MOCK routes.csv: numbers below are NOT real ***")
+        sys.exit(f"{args.routes} not found")
 
-    df = build(load_routes(args.routes))
-    df.to_csv(OUT / "buckets.csv", index=False)
-    print(f"buckets.csv: {len(df):,} routes, {df['clear_open'].sum():,} clear-open")
+    df = build(apply_filters(load_routes(args.routes)))
+    df.to_csv(OUT / "buckets.csv", index=False, float_format="%.3f")
+    src = df.loc[df["analyzed"], "window_start_src"].value_counts().to_dict()
+    csrc = df.loc[df["analyzed"], "closed_src"].value_counts().to_dict()
+    print(f"buckets.csv: {len(df):,} routes; clear-open window_start source {src}; "
+          f"closed check source {csrc}")
 
+    sight_check(df)
     headline(df)
 
     rating = rate(df)
     rating.to_csv(OUT / "receiver_rating.csv", index=False)
-    print(f"\nreceiver_rating.csv: {len(rating):,} receivers with >= {MIN_ROUTES} routes")
+    print(f"\nreceiver_rating.csv: {len(rating):,} receivers with >= {MIN_ROUTES} routes "
+          f"({rating['ttoe'].isna().sum()} without a ttoe, so no rating)")
     print(rating.head(10)[["displayName", "position", "n_routes", "window_rate", "ttoe",
                            "clock_rating"]].to_string(index=False))
-    if is_mock:
-        print("*** MOCK ***")
 
 
 if __name__ == "__main__":
