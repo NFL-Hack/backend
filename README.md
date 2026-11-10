@@ -1,5 +1,11 @@
 # Open, Seen, In Time: why clear-open receivers go unthrown
 
+On 2,229 plays in the 2021 NFL tracking data (weeks 1-8), a receiver 5+ yards downfield was clearly the most open man on the field.¹ QBs threw to him on 619 and passed on him 72% of the time, and those plays averaged 6.7 yards against 14.7 when he got the ball. Pressure doesn't explain it: QBs hit him about 28% of the time whether the pocket was clean or pressured. We time each open window against the pocket clock and the QB's sight cone. A third of the ignored men opened too late, two in five never had a real window, and on 462 plays (29%) he was open in time, in the QB's sight, and still open at the throw. `clock_rating` turns the same checks into a WR/TE rating: does he get open in time, where the QB can see him?
+
+¹ 7 plays dropped: no snap event. The earlier openness analysis in `analysis/` counts 2,236 plays and 621 targets, because it keeps them.
+
+**Visuals:** [`analysis/viz/index.html`](analysis/viz/index.html): play replay, cost of ignoring, why he was ignored, the race against the pocket, scouting card.
+
 ## What we built
 
 A pipeline on the NFL Big Data Bowl tracking data (2021 season, weeks 1-8, 122 games) that answers one question for every clear-open downfield receiver who was not thrown to: **was it the clock, the QB's line of sight, or the QB?**
@@ -8,10 +14,13 @@ A pipeline on the NFL Big Data Bowl tracking data (2021 season, weeks 1-8, 122 g
 - `src/clock.py`: per-play pressure clock (`time_to_pressure`, `t_end`, `end_event`, `n_rushers`) and per-frame QB line of sight to every route runner.
 - `src/combine.py`: joins the two, assigns buckets, prints the headline, builds the receiver rating.
 - Committed outputs: `outputs/routes.csv`, `outputs/play_clock.csv`, `outputs/buckets.csv`, `outputs/receiver_rating.csv`.
+- `analysis/`: supporting work. `openness/` covers openness at the throw and which QBs and receivers it hits; `pressure/` has the clean vs pressured split; `clock/` has the Beat-the-Clock score; `viz/` has the visuals.
+
+**Prior work.** Hypothetical completion probability (Big Data Bowl 2019, Deshpande & Evans) and ESPN's Open Score measure how open a receiver is. What's new here: timing the open window against the pocket clock and the QB's sight cone, and sorting every ignored open man into why-ignored buckets. All of this is on a dataset whose 2023 Big Data Bowl entries studied linemen.
 
 ## The insight
 
-On **2,229** plays a receiver was clear open downfield. QBs threw to him on 619 plays (27.8%) and **ignored him on 1,610 (72.2%)**. Why he was ignored:
+On **2,229** plays a receiver was clear open downfield. QBs threw to him on **619** plays (27.8%) and **ignored him on 1,610 (72.2%)**. Why he was ignored:
 
 | bucket | share of ignored | sub-buckets |
 |---|---|---|
@@ -22,6 +31,10 @@ On **2,229** plays a receiver was clear open downfield. QBs threw to him on 619 
 When the clear-open receiver was targeted: **79.3%** completion, **14.72** yards/play. When he was ignored: **64.9%** completion, **6.69** yards/play.
 
 On 462 plays (28.7% of the ignored ones), the QB passed up a receiver who opened before pressure, at least 0.4 s before the throw, in his sight, and was still open at the throw.
+
+**Pressure doesn't explain the ignoring** (`analysis/pressure/`). QBs hit the clear-open downfield man on 27.8% of plays with a clean pocket and 27.7% of plays with any pressure. Pressure here means tracking pressure (rusher within 2 yd) or a PFF hit, hurry or sack. With a clean pocket and 2.5 s+ to throw, they still passed on him 66% of the time, at a cost of 9.3 yards a play (16.6 vs 7.3). This split uses the 2,236-play count.
+
+**Receiver rating.** `clock_rating` (in `outputs/receiver_rating.csv`) is the only receiver rating. It is defined under Method below. The Beat-the-Clock score in `analysis/clock/` is supporting detail; its main use is the man vs zone split (e.g. WRs get open on 31% of covered routes against man vs 66% against zone).
 
 ## Who uses it
 
@@ -103,6 +116,9 @@ Completion % is over pass attempts (C / I / IN). Yards/play is the mean `playRes
 - **`ttoe` is coarse.** Times are in 0.1 s steps, so many receivers tie on `ttoe`, and small samples (30-40 routes) can reach the top of the list.
 - Pressure is a proximity proxy. It misses pressure that moves the QB off his spot from 3+ yd away, and it counts rushers engaged with a blocker inside 2 yd.
 - Small position × alignment × coverage cells make `expected` noisy for rare alignments.
+- **Two pocket clocks.** The pocket-survival curve in `analysis/clock/` (and "The Race" visual) counts pressure at or before the throw, plus sacks. `src/clock.py` counts it strictly before the end frame. Its survival times are not comparable with `time_to_pressure` here.
+- Openness is geometry only: no route concept, no leverage, no ball placement.
+- The results describe what happened, not what caused it.
 - 8 weeks of one season.
 
 ## Run it
@@ -112,6 +128,7 @@ python3.12 -m venv .venv && .venv/bin/pip install -r requirements.txt
 .venv/bin/python src/openness.py     # routes.csv + openness_frames.csv
 .venv/bin/python src/clock.py        # play_clock.csv + qb_sight_frames.csv
 .venv/bin/python src/combine.py      # buckets.csv + receiver_rating.csv + headline
+cd analysis/viz && ../../.venv/bin/python make_viz.py   # all visuals
 ```
 
 Raw data is expected at `../nfl-big-data-bowl-regional-event-data-main/data` (override with `NFL_DATA_DIR`). It is not committed.
